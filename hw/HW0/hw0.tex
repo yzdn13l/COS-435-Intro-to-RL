@@ -89,7 +89,7 @@
 
 \date{Due February 3, 2025}
 \author{\begin{fillme}[width=0.3\textwidth]
-Your Name
+Yuzhou Zhao
 \end{fillme}} % Fill in your name!
 
 \begin{document}
@@ -131,20 +131,49 @@ Suppose we are playing a really simple game with $10$ unique boxes, each with th
 Suppose our \textbf{agent's policy} is to randomly select one of the labelled boxes,\href{https://en.wikipedia.org/wiki/Discrete_uniform_distribution}{ each with equal probability}. In other words, $\pi = \mathcal{U}\{1,\dots, 10\}$, and the agent selects a box $a \sim \pi$. Conditioned on the fact the the gold coin is in the box labelled $5$ and the silver coin is in box labeled $1$, what is the expected reward?
 
 \begin{solution}
-Your solution here.  
+Know that:
+\begin{equation}
+    r(a) = \begin{cases}
+5, & a = 5, \\
+1, & a = 1, \\
+0, & \text{otherwise }.
+\end{cases}
+\end{equation}
+Thus the expected reward is: 
+\begin{align}
+    \mathbb{E}[r(a)] = & \sum_{a=1}^{10}P(a)r(a) \\
+    = & \frac{1}{10}\cdot 5 +\frac{1}{10}\cdot 1 \\
+    = & 0.6
+\end{align} 
 \end{solution}
 
 \subsection*{Question 1.b (0 points)}
 Given the same assumptions as (1.a), what is the policy of the agent that maximizes the expected reward?
 \begin{solution}
-Your solution here. 
+The policy that maximized the expected reward would be 
+\begin{equation}
+    \pi^* = \delta(a=5) = \begin{cases}
+1, & a = 5, \\
+0, & \text{otherwise }.
+\end{cases}
+\end{equation}
+And the maximized reward is $\mathbb{E}[r(a\sim \pi^*)] = 5$
+
 \end{solution}
 
 \subsection*{Question 1.c (0 points)}
 What is the entropy of the policy in (1.a) and the entropy of the policy in (1.b)? 
 
 \begin{solution}
-Your solution here.
+The entropy of the first policy $\pi$:
+\begin{equation}
+    H(\pi) = -\sum_{a=1}^{10}P(a)\log P(a) = -\sum_{a=1}^{10}\frac{1}{10}\log \frac{1}{10} \cong 3.32
+\end{equation}
+The entropy of the second policy $\pi^*$:
+\begin{equation}
+    H(\pi^*) = -\sum_{a=1}^{10}P(a)\log P(a) = -\log 1 = 0 .
+\end{equation}
+Which means that the second policy has no uncertainty at all.
 \end{solution}
 
 \subsection*{Question 1.d \textbf{Coding} (0 points)}
@@ -164,7 +193,11 @@ Expected reward is \textbf{0.58 to the nearest hundredth, 0.6 to the nearest ten
 \\\\
 \textbf{Fill in your code here:}
 \begin{lstlisting}[language=Python]
-Your code here.
+### Your code here.
+g_x = Normal(0.6, 0.3)
+x = g_x.sample((100000,))
+r = reward(x)
+print("Expected reward:", r.mean())
 \end{lstlisting}
 \end{solution}
 
@@ -176,10 +209,14 @@ Plot the reward distribution under this policy using \texttt{matplotlib.pyplot.h
 
 \begin{solution}
 \begin{lstlisting}[language=Python]
-Your code here.
+### Your code here.
+plt.hist(r, bins=100, density=True)
+plt.xlabel('r')
+plt.ylabel('p(r)')
+plt.savefig('q_1e.png')
 \end{lstlisting}
 
-\includegraphics[width = \textwidth]{placeholder.png}
+\includegraphics[width = \textwidth]{hw/HW0/q_1e.png}
 
 \end{solution}
 \newpage
@@ -195,18 +232,20 @@ $$ f_X(x) = \frac{1}{\sqrt{2\pi \sigma^2}} \exp \left( - \frac{(x - \mu)^2}{2\si
 Let $\theta = \sigma^2$. For a set of datapoints $X_1,...,X_n$ sampled \iid~from a Normal distribution with unknown parameters $\mu$ and $\theta$, find the log-likelihood function $L(\mu, \theta; X_1,...,X_n)$. You answer should be in terms of $n$, $X_1,...,X_n$, $\mu$, and $\theta$.
 
 \begin{solution}
-$L(\mu, \theta; X_1,...,X_n) =$
+\begin{align}
+    L(\mu, \theta; X_1,...,X_n) = & \ln \left(\prod_{i=1}^{n}f_X(\mu, \theta; X_i)\right) \\
+    = & \sum_{i=1}^{n}\ln \left( \frac{1}{\sqrt{2\pi \theta}} \exp \left( - \frac{(X_i - \mu)^2}{2\theta} \right) \right) \\
+    = & \sum_{i=1}^{n}\ln \left( \frac{1}{\sqrt{2\pi \theta}} \right) - \frac{(X_i - \mu)^2}{2\theta} \\
+    = & -\frac{n}{2} \ln \left( 2 \pi \theta \right) - \sum_{i=1}^{n} \frac{(X_i - \mu)^2}{2\theta}
+\end{align}
 
-Your solution here.
 \end{solution}
 \subsection*{Question 2.b (0 points)} 
 Using your answer in (2.a), solve for the MLE of $\mu$ and $\theta$. Solutions should also show that the critical points are maximums, e.g., compute derivatives around the critical point and number of critical points argument.
 \begin{solution}
-$\frac{\partial L}{\partial \mu}=$
+$\frac{\partial L}{\partial \mu}=\sum_{i=1}^{n} \frac{X_i - \mu}{\theta}$
 
-$\frac{\partial L}{\partial \theta}=$
-
-Your solution here.
+$\frac{\partial L}{\partial \theta}= -\frac{n}{2\theta} + \sum_{i=1}^{n} \frac{(X_i - \mu)^2}{2\theta^2}$
 \end{solution}
 \newpage
 
@@ -220,7 +259,46 @@ each problem.
 
 \begin{solution}
 \begin{lstlisting}[language=Python]
-Your code here.
+# Import the dataset
+rng = np.random.RandomState(189289213)
+X = 10 * rng.rand(1000, 10) # feature matrix
+y = np.dot(X, [1,2,3,4,5,6,7,8,9,10]) + np.random.normal(0, 0.01) # target vector
+
+def init_weights (in_1:int, in_2:int) -> np.ndarray:
+  return np.random.rand(in_1,in_2)
+
+weights = init_weights(X.shape[1], 1)
+
+# Helper functions to get you started. Feel free to use or not use them.
+def gradient_descent(X, y, weights: np.ndarray, eta: float, iterations: int):
+  for i in range(iterations):
+    ### Your code here.
+    N = X.shape[0]
+    loss = 1 / (2*N) * (X @ weights - y[:, None]).T @ (X @ weights - y[:, None])
+    grad = X / N * (X @ weights - y[:, None])
+    weights -= eta * grad.sum(0)[:, None]
+    if i % 100 ==0: print("loss: ", loss) 
+
+gradient_descent(X, y, weights, eta=0.001, iterations=500)
+
+print("Solved weights:", weights)
+'''
+loss:  [[34301.87999235]]
+loss:  [[62.24029559]]
+loss:  [[12.82772996]]
+loss:  [[2.69173858]]
+loss:  [[0.57378897]]
+Solved weights: [[1.10131518]
+ [2.06274845]
+ [3.03431916]
+ [4.03897822]
+ [5.00152001]
+ [5.99416033]
+ [6.97466198]
+ [7.93863466]
+ [8.90699561]
+ [9.94703617]]
+'''
 \end{lstlisting}
 \end{solution}
 
@@ -229,7 +307,41 @@ Rewrite your solution to (3.a) using the torch library. Your solution must use \
 
 \begin{solution}
 \begin{lstlisting}[language=Python]
-Your code here.
+X_t = torch.from_numpy(X).float()
+y_t = torch.from_numpy(y).float()
+
+weights = torch.randn((X.shape[1], 1), requires_grad=True)
+
+def gradient_descent_torch(X, y, weights: torch.tensor, eta: float, iterations: int) -> None:
+  for i in range(iterations):
+    # Your code here
+    N = X.shape[0]
+    loss = 1 / (2*N) * (X @ weights - y.unsqueeze(-1)).T @ (X @ weights - y.unsqueeze(-1))
+    loss.backward()
+    with torch.no_grad(): 
+      weights.sub_(eta * weights.grad)
+    weights.grad.zero_()
+    if i % 100 ==0: print("loss: ", loss) 
+
+gradient_descent_torch(X_t, y_t, weights, 0.001, 500)
+print(weights)
+'''
+loss:  tensor([[36692.4453]], grad_fn=<MmBackward0>)
+loss:  tensor([[80.2165]], grad_fn=<MmBackward0>)
+loss:  tensor([[16.3264]], grad_fn=<MmBackward0>)
+loss:  tensor([[3.3814]], grad_fn=<MmBackward0>)
+loss:  tensor([[0.7109]], grad_fn=<MmBackward0>)
+tensor([[1.0877],
+        [2.1002],
+        [3.0348],
+        [4.0425],
+        [4.9941],
+        [5.9777],
+        [6.9692],
+        [7.9612],
+        [8.8860],
+        [9.9462]], requires_grad=True)
+'''
 \end{lstlisting}
 \end{solution}
 
@@ -238,12 +350,10 @@ We value your feedback and would love to hear your thoughts on the course. In on
 
 % We value your feedback and would love to hear your thoughts on the course. Please share your feedbacks, including what you expect to change in course structure or logistics, areas for improvement, and any specific expectations or topics you would like us to cover in the future. Additionally, we welcome any suggestions on how we can enhance the learning experience to better meet your needs. Your input is greatly appreciated!
 \begin{solution}
-Your solution here. 
+Upload Percept notes please.
 \end{solution}
 
 % \end{solution}
 \newpage
 
 \end{document}
-
-
