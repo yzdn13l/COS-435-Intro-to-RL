@@ -345,18 +345,23 @@ class Bandit:
         self.N = 0  # number of samples collected so far
     
     def pull(self):
-        pass
+        # pass
         ### START CODE HERE ###
         # TODO: Simulate pulling the arm. Recall that True is also regarded as 1 and False is regarded as 0 ###
         # Hint: Use np.random.random() and compare with self.p to simulate a dense probability distribution
+        prob = np.random.random()
+        return prob < self.p
         ### END CODE HERE ###
     
     def update(self, x):
-        pass
+        # pass
         ## START CODE HERE ###
         # TODO: Update the win rate estimate and increment N ###
         # Hint: Calculate the new estimate as a weighted average of the old estimate and the new sample `x`
+        self.N += 1 # Increment the number of samples
+        self.p_estimate = ((self.N - 1) * self.p_estimate + x) / self.N
         ### END CODE HERE ###
+
 \end{lstlisting}
 \end{solution}
 
@@ -366,10 +371,12 @@ The UCB algorithm selects the bandit to play based on both the estimated win rat
 \begin{solution}
 \begin{lstlisting}[language=Python]
 def ucb(mean, n, nj):
-    pass
+    # pass
     ### START CODE HERE ###
     # TODO: Implement the UCB formula to calculate the upper confidence bound ###
     # Hint: UCB = estimated win rate + exploration factor. The exploration factor can be calculated using np.sqrt(2 * np.log(n) / nj)
+    exploration_factor = np.sqrt(2 * np.log(n) / nj)
+    return mean + exploration_factor
     ### END CODE HERE ###
 \end{lstlisting}
 \end{solution}
@@ -385,17 +392,41 @@ def run_experiment(bandit_probs, N, strategy="ucb", epsilon=0.1, decay_rate=0.99
     total_plays = 0
     
     # Strategy selection
+    
+    # Below is an example of lambda function that returns a random bandit, refer to this for the implementation of other strategies
     if strategy == "random":
         selection_strategy = lambda: np.random.choice(len(bandits))
+    
+    ### START CODE HERE ###
+    # TODO: Implement the epsilon-greedy strategy.
+    # HINT: With probability epsilon, select a random bandit; otherwise, select the bandit with the highest estimated win rate.
     elif strategy == "epsilon-greedy":
-        selection_strategy = lambda: np.random.choice([np.random.choice(len(bandits)), np.argmax([b.p_estimate for b in bandits])], p=[epsilon, 1-epsilon])
-    elif strategy == "epsilon-greedy-decay":
-        selection_strategy = lambda: np.random.choice([np.random.choice(len(bandits)), np.argmax([b.p_estimate for b in bandits])], p=[current_epsilon, 1-current_epsilon]) if np.random.random() < current_epsilon else np.argmax([b.p_estimate for b in bandits])
-    elif strategy == "ucb":
-        selection_strategy = lambda: np.argmax([ucb(b.p_estimate, total_plays, b.N) for b in bandits])
-    else:
-        raise ValueError("Strategy not implemented!")
+        # pass
+        # Uncomment and complete the implementation below
+        # selection_strategy = lambda: np.random.choice([...], p=[...])
+        selection_strategy = lambda: np.random.choice(len(bandits)) if np.random.random() < epsilon else np.argmax([b.p_estimate for b in bandits])
 
+    
+    # TODO: Implement the epsilon-greedy with decay strategy.
+    # HINT: Start with a high value of epsilon for more exploration and decrease it over time to shift towards exploitation.
+    # You need to customize the decay schedule you want.
+    elif strategy == "epsilon-greedy-decay":
+        # Uncomment and customize the decay schedule as needed
+        current_epsilon = epsilon  # You might want to update this within the loop
+        selection_strategy = lambda: np.random.choice(len(bandits)) if np.random.random() < current_epsilon else np.argmax([b.p_estimate for b in bandits])
+    
+    # TODO: Implement the UCB strategy.
+    # HINT: Use the ucb function to calculate the upper confidence bound for each bandit and select the bandit with the highest bound.
+    elif strategy == "ucb":
+        pass
+        # Uncomment and complete the implementation below
+        selection_strategy = lambda: np.argmax([ucb(b.p_estimate, total_plays, b.N) for b in bandits])
+    
+    ### END CODE HERE ###
+    
+    else:
+        raise ValueError("Unsupported strategy")
+    
     # Initialization: Play each bandit once - No changes needed
     for j in range(len(bandits)):
         x = bandits[j].pull()
@@ -403,25 +434,21 @@ def run_experiment(bandit_probs, N, strategy="ucb", epsilon=0.1, decay_rate=0.99
         total_plays += 1
         rewards[total_plays - 1] = x
 
-    # Run the Main loop to play N rounds 
-    
-    if strategy == "epsilon-greedy-decay":
-        current_epsilon = epsilon
-    
+    ### START CODE HERE ###
     for i in range(N):
         if strategy == "epsilon-greedy-decay":
-            # Update current_epsilon using the decay rate
+            # TODO: Update current_epsilon using the decay rate
             current_epsilon *= decay_rate
-        
-        j = selection_strategy()
-        x = bandits[j].pull()
-        bandits[j].update(x)
+        # TODO: Implement the main loop to play N rounds
+        # Hint: For each iter, use the `selection_strategy()` function to obtain the bandit to pull, then simulate pulling that bandit and obtain new reward `x`. Update that bandit's estimate and the total number of plays.
+        # Finally, store `x` in the `rewards` array for final visualization.
+        bandit_index = selection_strategy()
+        x = bandits[bandit_index].pull()
+        bandits[bandit_index].update(x)
         total_plays += 1
         rewards[i] = x
-
-        if strategy == "epsilon-greedy-decay" and i < N - 1:
-            # Optionally adjust epsilon for the next round
-            current_epsilon = max(current_epsilon * decay_rate, 0.01)  # Ensure epsilon does not become too small
+    ### END CODE HERE ###
+    
 
     # Plotting the results - No changes needed
     cumulative_rewards = np.cumsum(rewards)
