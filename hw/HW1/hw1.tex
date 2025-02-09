@@ -484,7 +484,10 @@ After running the experiments, reflect on the performance of each strategy.
 Q: Which strategy achieved the highest cumulative reward? Why do you think this was the case?\\
 A: The $\epsilon$-greedy-decay strategy achieved the highest cumulative reward. This is because the strategy decays the $\epsilon$ as the step increases thus maximizes exploitation over exploration in the later stage of the simulation. \\
 Q: How did the performance of the epsilon-greedy strategy change with different values of epsilon?\\
-\includegraphics[width = \textwidth]{hw/HW1/bandit_4d3.png}
-A: As shown in the plot here, the performance of the epsilon-greedy strategy decreases as epsilon increases. Which means higher rate of exploration is harmful in later stage of the simulation.\\
+A: The performance of the epsilon-greedy strategy decreases as epsilon increases. Which means higher rate of exploration is harmful in later stage of the simulation.\\
+Q: How did the decaying epsilon schedule affect the exploration-exploitation balance over time? \\
+A: the decaying epsilon maximizes exploitation over exploration in the later stage of the simulation, thus achieves highest accumulative reward in this simulation. \\
+Q: In what ways did the UCB strategy outperform or underperform compared to the others? \\
+A: The UCB strategy underperforms compared to the epsilon-greedy and epsilon-greedy-decay in the above two experimental settings because it keeps the possibility to explore the less-chosen actions. E.g. in the second setting, where the first machine has a much lower probability than the other two, the gap between UCB performance is larger than in the first setting. If we set the true probability of machines to be more even, then UCB performs almost as good as the epsilon-greedy and epsilon-greedy-decay strategies.
 \end{solution}
 \end{document}
