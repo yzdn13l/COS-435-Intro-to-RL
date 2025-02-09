@@ -469,19 +469,22 @@ With the aforementioned \texttt{run\_experiment} function, you should able to si
 
 \paragraph{For \texttt{bandit\_probs = [0.2, 0.5, 0.75]}.}
 \begin{solution}
-
-
+\includegraphics[width = \textwidth]{hw/HW1/bandit_4d1.png}
 \end{solution}
 
 \paragraph{For \texttt{bandit\_probs = [0.1, 0.6, 0.4]}.}
 \begin{solution}
-
+\includegraphics[width = \textwidth]{hw/HW1/bandit_4d2.png}
 \end{solution}
 
 \subsection*{Question 4.e (5 points) } 
 \paragraph{Reflection and Analysis.}
 After running the experiments, reflect on the performance of each strategy.
 \begin{solution}
-
+Q: Which strategy achieved the highest cumulative reward? Why do you think this was the case?\\
+A: The $\epsilon$-greedy-decay strategy achieved the highest cumulative reward. This is because the strategy decays the $\epsilon$ as the step increases thus maximizes exploitation over exploration in the later stage of the simulation. \\
+Q: How did the performance of the epsilon-greedy strategy change with different values of epsilon?\\
+\includegraphics[width = \textwidth]{hw/HW1/bandit_4d3.png}
+A: As shown in the plot here, the performance of the epsilon-greedy strategy decreases as epsilon increases. Which means higher rate of exploration is harmful in later stage of the simulation.\\
 \end{solution}
 \end{document}
