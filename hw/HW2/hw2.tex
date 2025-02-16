@@ -129,6 +129,49 @@ Within each MPC step, use the Cross-Entropy Method (CEM) to search over a horizo
     \item Iterates above steps to fit the distributions for \texttt{cem\_iterations} steps. Returns the best sequence found over all update iterations and the final \texttt{mean\_probs} (which describes the final distribution).    
 \end{itemize}
 
+
+\begin{solution}
+\begin{lstlisting}[language=Python]
+def cross_entropy_method(mean_probs, horizon, num_actions, sample_size, elite_frac, cem_iterations, evaluate_fn):
+    """
+    TODO: Implement the Cross-Entropy Method (CEM).
+
+    Args:
+        mean_probs (np.ndarray): shape (horizon, num_actions),
+            the probability distribution over actions at each step.
+        horizon (int): planning horizon (number of steps).
+        num_actions (int): discrete action dimension (CartPole has 2).
+        sample_size (int): how many candidate sequences to sample each iteration.
+        elite_frac (float): fraction of top sequences to keep as "elite".
+        cem_iterations (int): number of distribution-refinement iterations.
+        evaluate_fn (callable): function(seq) -> returns a scalar cumulative reward for that action sequence.
+
+    Returns:
+        best_seq (np.ndarray): best action sequence found (shape: (horizon,))
+        final_probs (np.ndarray): the final distribution (horizon x num_actions).
+    """
+    ### YOUR CODE HERE ###
+    final_probs = mean_probs
+    for i in range(cem_iterations):
+        samples = np.array([np.random.choice(num_actions, sample_size, p=final_probs[t]) for t in range(horizon)]) # (horizon, sample_size)
+        samples = samples.T # (sample_size, horizon)
+        rewards = np.array([evaluate_fn(seq) for seq in samples]) # (sample_size,)
+        elite_inds = rewards.argsort()[-int(sample_size * elite_frac):] # (elite_size,)
+        elite_samples = samples[elite_inds] # (elite_size, horizon)
+        
+        elite_probs = np.zeros((horizon, num_actions))
+        for t in range(horizon):
+            for a in range(num_actions):
+                elite_probs[t, a] = np.sum(elite_samples[:, t] == a) / elite_samples.shape[0]
+        final_probs = elite_probs
+        
+    best_seq = elite_samples[0] # (horizon,)
+    # print(f"best_seq: {best_seq}")
+    # print(f"best reward: {rewards[elite_inds[0]]}")
+    return best_seq, final_probs
+\end{lstlisting}
+\end{solution}
+
 \noindent 3. \texttt{mpc\_control(env, horizon, cem\_iterations, sample\_size, elite\_frac, gamma)}
 \begin{itemize}
     \item On each environment step, calls the above CEM to get an action sequence of length $H$ from the current state.
@@ -161,6 +204,64 @@ obs_next, rew, done, _, _ = env.step(action)
 \end{lstlisting}
 \end{itemize}
 
+\begin{solution}
+\begin{lstlisting}[language=Python]
+def mpc_control(env, horizon=15, cem_iterations=4, sample_size=200, elite_frac=0.1, gamma=1.0):
+    """
+    TODO: Implement MPC with CEM for the CartPole environment.
+
+    On each environment step:
+      1) define an evaluate_fn that simulates a candidate sequence from the *current state* (or an approximation).
+      2) call cross_entropy_method(...) to get the best sequence of length 'horizon'.
+      3) execute the first action from 'best_seq'.
+      4) repeat until done or max steps reached.
+
+    Return:
+        total_reward (float): total (possibly discounted) reward of this episode.
+    """
+    ### YOUR CODE HERE ###      
+    def evaluate_fn(seq, temp_env=env):
+        total_ret = 0.0
+        discount_factor = 1.0
+        for action in seq:
+            # step
+            s_next, rew, done_, _, _ = temp_env.step(action)
+            total_ret += discount_factor * rew
+            discount_factor *= gamma
+            if done_:
+                break
+        return total_ret
+      
+    mean_probs = np.ones((horizon, env.action_space.n)) / env.action_space.n
+    done = False
+    s, _ = env.reset()
+    total_reward = 0
+    for t in range(env._max_episode_steps):
+        seq, _ = cross_entropy_method(mean_probs, 
+                                   horizon, 
+                                   env.action_space.n, 
+                                   sample_size, 
+                                   elite_frac, 
+                                   cem_iterations, 
+                                   lambda seq: evaluate_fn(seq, copy.deepcopy(env)))
+        action = seq[0]
+        s, r, done, _, _ = env.step(action)
+        # print(f"t: {t}, action: {action}, r: {r}")
+        total_reward += (gamma**t) * r
+        if done:
+            break
+    return total_reward
+\end{lstlisting}
+Final output:
+\begin{lstlisting}
+[MPC Episode 1] Return = 378.00
+[MPC Episode 2] Return = 336.00
+[MPC Episode 3] Return = 342.00
+[MPC Episode 4] Return = 500.00
+[MPC Episode 5] Return = 171.00
+Average Return (MPC + CEM): 345.4
+\end{lstlisting}
+\end{solution}
 
 \section*{Question 2 (10-point bonus -- optional): Zero-Order Policy Search using CEM}
 
@@ -182,13 +283,13 @@ obs_next, rew, done, _, _ = env.step(action)
 \begin{lstlisting}[language=Python]
 def choose_action(w, obs):
     """
-    A simple linear policy for CartPole: 
+    A simple linear policy for CartPole:
       action = 1 if w dot obs > 0 else 0.
     w, obs: shape (4,)
     """
     ### YOUR CODE HERE ###
-    pass
-
+    action = 1 if np.dot(w, obs) > 0 else 0
+    return action
 
 def rollout_episode(env, w):
     """
@@ -196,8 +297,16 @@ def rollout_episode(env, w):
     Return total (undiscounted) reward.
     """
     ### YOUR CODE HERE ###
-    pass
-
+    s, _ = env.reset()
+    total_reward = 0
+    done = False
+    for t in range(env._max_episode_steps):
+        action = choose_action(w, s)
+        s, r, done, _, _ = env.step(action)
+        total_reward += r
+        if done:
+            break
+    return total_reward
 
 def train_cem_policy(env, dim=4, cem_iterations=10, sample_size=50, elite_frac=0.2):
     """
@@ -211,25 +320,35 @@ def train_cem_policy(env, dim=4, cem_iterations=10, sample_size=50, elite_frac=0
     """
 
     # Example init (feel free to change it)
-    mean = np.zeros(dim)  
-    std = np.ones(dim)*2.0 
+    mean = np.zeros(dim)
+    std = np.ones(dim)*2.0
     best_w = mean.copy()
     best_score = -1e9
 
     ### YOUR CODE HERE ###
-    
-    pass 
-
+    for _ in range(cem_iterations):
+        samples = np.random.normal(mean, std, (sample_size, dim))
+        rewards = np.array([rollout_episode(env, w) for w in samples])
+        elite_inds = rewards.argsort()[-int(sample_size * elite_frac):]
+        elite_samples = samples[elite_inds]
+        mean = elite_samples.mean(axis=0)
+        std = elite_samples.std(axis=0)
+        best_score = rewards[elite_inds[-1]]
+        best_w = elite_samples[-1]
+    return best_w
 
 def eval_policy(env, w, episodes=5):
     """
-    TODOs: Evaluate policy param 'w' over multiple episodes 
+    TODOs: Evaluate policy param 'w' over multiple episodes
     and return average total reward.
     """
     ### YOUR CODE HERE ###
-    pass
-
-
+    total_rewards = [rollout_episode(env, w) for _ in range(episodes)]
+    return np.mean(total_rewards)
+\end{lstlisting}
+Final output:
+\begin{lstlisting}
+Final policy average return (Zero-Order Search) = 148.20
 \end{lstlisting}
 \end{solution}
 
